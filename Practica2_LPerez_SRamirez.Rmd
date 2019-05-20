@@ -7,21 +7,16 @@ output:
     df_print: paged
 ---
 
+# 1. Descripción del dataset
 
-
-# 1. Detalles de la actividad
-## 1.1 Descripción
-## 1.2 Objetivos
-## 1.3 Competencias
-# 2. Resolución
-## 2.1 Descripción del dataset
+El conjunto de datos obtenido recoge los medicamentos con más facturación en el mundo farmacéutico. A la vez también esta incorporado los medicamentos más consumidos en España. Este dataset es variable ya que se tendrán tantos medicamentos como el código demande. Esto es posible ya que el código esta preparado para hacer de buscador y extractor de aquellos medicamentos que se pasen por parámetros. Algunas variables de las que encontramos en el dataset sería el precio, nombre del medicamente, genérico o url del Vademecum.
 
 ```{r}
 # Creamos los path que posteriormente deberemos de cargar los objetos
-path <- 'C:/Users/sergir/Desktop/result.csv'
+path <- 'result.csv'
 
 # Leemos los datos para guardar
-datos <- read.csv2(path, sep = ";", header = T, stringsAsFactors = T, dec = ".")
+datos <- read.csv2(path, sep = ";", header = T, stringsAsFactors = T, dec = ".", encoding = 'latin1')
 
 # Generamos el archivo metadata
 library(Hmisc)
@@ -29,9 +24,8 @@ metadata <- contents(datos)
 html(metadata)
 ```
 
-## 2.2 Importancia y objetivos de los análisis
-## 2.3 Limpieza de los datos
-### 2.3.1 Transformación de los datos
+# 2. Integración y selección de datos
+
 ```{r}
 # Convertimos los valores de la fecha a character
 datos[, 'Fecha.alta'] <- as.character(datos[, 'Fecha.alta'])
@@ -81,11 +75,7 @@ for (i in 1:length(codigos)){
 datos[, 'CodLaboratorio'] <- data[, 'codigo']
 ```
 
-
-
-
-
-### 2.3.1 Selección de los datos de interés
+### Selección de los datos de interés
 
 ```{r}
 # Separamos los valores numéricos de otros tipos de valores. Para ello vamos a primero mirar cuantos tipos de variables tenemos. 
@@ -95,12 +85,11 @@ table(lista_clase)
 t <- unname(which(lista_clase == 'factor'))
 
 # Vemos que hemos de generar 4 tipos diferentes 
-
-
 ```
 
+# 3. Limpieza de datos
 
-### 2.3.2 Ceros y elementos vacíos
+## 3.1. Ceros y elementos vacíos
 
 Como tenemos en variables numéricas valores NA's deberemos de imputar estos registros para obtener los que realmente se consideren más cercanos. Para ello utilizaremos un método de imputación llamado *MICE*.
 
@@ -113,33 +102,41 @@ imputed_Data <- mice(datos, m=5, maxit = 50, method = 'pmm', seed = 500)
 completeData <- complete(imputed_Data)
 ```
 
-
-### 2.3.3 Valores extremos
-### 2.3.4 Exportación de los datos preprocesados
-## 2.4 Análisis de los datos
-### 2.4.1 Selección de los grupos de datos a analizar
-### 2.4.2 Comprobación de la normalidad y homogeneidad de la varianza
-
-```{r}
-
-```
+## 3.2. Valores extremos
 
 
-## 2.5 Pruebas estadísticas
-### 2.5.1 ¿Existen diferencias en el precio según el tipo de medicamento? 
+# 4. Análisis de los datos
+
+## 4.1. Selección de grupos de datos a analizar
+
+## 4.2 Comprobación de normalidad y homogeneidad de la varianza
 
 ```{r}
 
 ```
 
 
-### 2.5.2 ¿El precio del medicamento es influido por el laboratorio que lo genera?
+## 4.3. Pruebas estadísticas
+
+### 4.3.1. ¿Existen diferencias en el precio según el tipo de medicamento? 
 
 ```{r}
 
 ```
 
-### 2.5.3 Modelo de predicción del precio
-## 2.6 Conclusiones
-# 3. Recursos
 
+### 4.3.2. ¿El precio del medicamento es influido por el laboratorio que lo genera?
+
+```{r}
+
+```
+
+### 4.3.3. Modelo de predicción del precio
+
+# 5. Representación de resultados
+
+# 6. Resolución del problema
+
+# 7. Código
+
+El código del proyecto se encuentra en el repositorio libre de Github. [Enlace](https://github.com/lmgeraldino/vademecum-consolidation).
