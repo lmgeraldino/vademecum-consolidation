@@ -7,16 +7,33 @@ output:
     df_print: paged
 ---
 
+```{r}
+# Instalar paquetes de R
+RequiredPackages <- c("Hmisc", "dplyr", 'VIM', 'FactoMineR', 'tidyr', 'dplyr', 'magrittr')
+for (i in RequiredPackages) { #Installs packages if not yet installed
+    if (!require(i)) install.packages(i)
+}
+```
+
+
 # 1. Descripción del dataset
 
 El conjunto de datos obtenido recoge los medicamentos con más facturación en el mundo farmacéutico. A la vez también esta incorporado los medicamentos más consumidos en España. Este dataset es variable ya que se tendrán tantos medicamentos como el código demande. Esto es posible ya que el código esta preparado para hacer de buscador y extractor de aquellos medicamentos que se pasen por parámetros. Algunas variables de las que encontramos en el dataset sería el precio, nombre del medicamente, genérico o url del Vademecum.
 
 ```{r}
 # Creamos los path que posteriormente deberemos de cargar los objetos
-path <- 'result.csv'
+
+path <- 'C:/Users/User/Desktop/vademecum-consolidation-master/'
+
+archivo <- 'result.csv'
 
 # Leemos los datos para guardar
-datos <- read.csv2(path, sep = ";", header = T, stringsAsFactors = T, dec = ".", encoding = 'latin1')
+datos <- read.csv2(paste0(path, archivo), sep = ";", header = T, stringsAsFactors = T, dec = ".", encoding = 'UTF-8')
+
+# Cambiamos el nombre de las columnas para que puedan ser leibles
+cols <- c("Medicamento", "URL", "Presentacion", "Codigo_Nacional", "Tipo", "Generico", "Laboratorio", "Estado", "Fecha_Alta", "Fecha_Baja", "Aportacion_Beneficiario", "Principio_Activo", "PVP", "Precio_Referencia", "Menor_Precio_Agrupacion_Homogenea", "Agrupacion_Homogenea", "Diasgnostico_Hospitalario", "Tratamiento_Larga_Duracion", "Control_Medico", "Huerfano", "Enfermedad")
+
+colnames(datos) <- cols
 
 # Generamos el archivo metadata
 library(Hmisc)
@@ -28,11 +45,11 @@ html(metadata)
 
 ```{r}
 # Convertimos los valores de la fecha a character
-datos[, 'Fecha.alta'] <- as.character(datos[, 'Fecha.alta'])
-datos[, 'Fecha.baja'] <- as.character(datos[, 'Fecha.baja'])
+datos[, 'Fecha_Alta'] <- as.character(datos[, 'Fecha_Alta'])
+datos[, 'Fecha_Baja'] <- as.character(datos[, 'Fecha_Baja'])
 
 # Separamos el código de la agrupación
-codigos <- strsplit(as.character(datos[, 'Agrupación.homogénea']), "-")
+codigos <- strsplit(as.character(datos[, 'Agrupacion_Homogenea']), "-")
 data = data.frame(codigo = character(), agrupacion = character(), stringsAsFactors=FALSE)
 
 for (i in 1:length(codigos)){
@@ -45,7 +62,7 @@ for (i in 1:length(codigos)){
     }
 }
 
-datos[, 'CodAgrupacion'] <- data[, 'codigo']
+datos[, 'Codigo_Agrupacion'] <- data[, 'codigo']
 
 # Realizamos la separación por laboratorio
 lab <- strsplit(as.character(datos[, 'Laboratorio']), ",")
@@ -72,7 +89,7 @@ for (i in 1:length(codigos)){
     data[i, 3] = valor3
 }
 
-datos[, 'CodLaboratorio'] <- data[, 'codigo']
+datos[, 'Codigo_Laboratorio'] <- data[, 'codigo']
 ```
 
 ### Selección de los datos de interés
@@ -82,24 +99,63 @@ datos[, 'CodLaboratorio'] <- data[, 'codigo']
 lista_clase <- sapply(datos, class)
 table(lista_clase)
 
-t <- unname(which(lista_clase == 'factor'))
-
 # Vemos que hemos de generar 4 tipos diferentes 
+
+# Generamos diferentes variables
+var_factor    <- unname(which(lista_clase == 'factor'))
+var_character <- unname(which(lista_clase == 'character'))
+var_numeric   <- unname(which(lista_clase %in% c('numeric', 'integer')))
 ```
 
 # 3. Limpieza de datos
 
 ## 3.1. Ceros y elementos vacíos
 
+Primero de todo vamos a mirar donde tenemos NA's y cuantos NA's hay por cada variable.
+
+```{r}
+NAs <- data.frame(absoluto = colSums(is.na(datos)))
+NAs[, 'porcentaje'] <- round((NAs$absoluto/nrow(datos))*100, 2)
+NAs
+```
+
+Por lo tanto, nos replanteamos la idea de imputar las variables `Precio_Referencia` y `Menor_Precio_Agrupacion_Homogenea`. Eliminamos la variable `Generico` ya que el 100% corresponde a NA's.
+
+```{r}
+# Eliminamos la variable Generico de nuestro conjunto de datos
+datos[, 'Generico'] <- NULL
+```
+
 Como tenemos en variables numéricas valores NA's deberemos de imputar estos registros para obtener los que realmente se consideren más cercanos. Para ello utilizaremos un método de imputación llamado *MICE*.
 
 ```{r}
 # https://www.analyticsvidhya.com/blog/2016/03/tutorial-powerful-packages-imputing-missing-values/
+
+# http://rpubs.com/ydmarinb/429757
+
+# https://rpubs.com/medusa/128029
+
+# 1) Primero vamos a ver los patrones
+aggr(datos, prop=FALSE, 
+     numbers=TRUE, border=NA,
+     combine=TRUE)
+
+
+library(VIM)
+library(FactoMineR)
+library(tidyr)
+library(dplyr)
+library(magrittr)
 library(mice)
 
-md.pattern(datos)
-imputed_Data <- mice(datos, m=5, maxit = 50, method = 'pmm', seed = 500)
-completeData <- complete(imputed_Data)
+variables <- c(var_numeric)
+Datos_imputados <- mice(datos[, names(datos) %in% colnames(datos)[variables]]
+, m=5, seed = 2018)
+
+Datos_imputados <- mice(datos[, names(datos) %in% colnames(datos)[variables]])
+completeData <- complete(Datos_imputados)
+
+aggr(completeData)
 ```
 
 ## 3.2. Valores extremos
@@ -132,6 +188,10 @@ completeData <- complete(imputed_Data)
 ```
 
 ### 4.3.3. Modelo de predicción del precio
+
+### 4.3.4. Recomendador de medicamentos
+
+### 4.3.5. Aplicación recomendador de medicamentos
 
 # 5. Representación de resultados
 
