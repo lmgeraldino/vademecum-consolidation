@@ -250,9 +250,28 @@ shapiro.test(log(datos[,'PVP']))
 ## 4.2 Comprobación de normalidad y homogeneidad de la varianza
 
 ```{r}
+library(nortest)
+alpha = 0.05
+col.names = colnames(datos)
+for (i in 1:ncol(datos)) {
+  if (i == 1) cat("Variables que no siguen una distribución normal:\n")
+  if (is.integer(datos[,i]) | is.numeric(datos[,i])) {
+    p_val = ad.test(datos[,i])$p.value
+    if (p_val < alpha) {
+      cat("  - ")
+      cat(col.names[i])
+      cat("\n")
+    }
+  }
+}
 
+library(arules)
+datos$Categoria_PVP <- discretize(datos$PVP, labels = c('A', 'B', 'C'))
 ```
 
+```{r}
+fligner.test(PVP ~ Categoria_PVP, data = datos)
+```
 
 ## 4.3. Pruebas estadísticas
 
