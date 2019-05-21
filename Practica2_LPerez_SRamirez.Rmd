@@ -21,12 +21,8 @@ for (i in RequiredPackages) { #Installs packages if not yet installed
 El conjunto de datos obtenido recoge los medicamentos con más facturación en el mundo farmacéutico. A la vez también esta incorporado los medicamentos más consumidos en España. Este dataset es variable ya que se tendrán tantos medicamentos como el código demande. Esto es posible ya que el código esta preparado para hacer de buscador y extractor de aquellos medicamentos que se pasen por parámetros. Algunas variables de las que encontramos en el dataset sería el precio, nombre del medicamente, genérico o url del Vademecum.
 
 ```{r}
-# Creamos los path que posteriormente deberemos de cargar los objetos
-path <- 'C:/Users/sergir/Desktop/vademecum-consolidation-master/'
-archivo <- 'result.csv'
-
 # Leemos los datos para guardar
-datos <- read.csv2(paste0(path, archivo), sep = ";", header = T, stringsAsFactors = T, dec = ".", encoding = 'latin1')
+datos <- read.csv2('result.csv', sep = ";", header = T, stringsAsFactors = T, dec = ".", encoding = 'latin1')
 
 # Cambiamos el nombre de las columnas para que puedan ser leibles
 cols <- c("Medicamento", "URL", "Presentacion", "Codigo_Nacional", "Tipo", "Generico", "Laboratorio", "Estado", "Fecha_Alta", "Fecha_Baja", "Aportacion_Beneficiario", "Principio_Activo", "PVP", "Precio_Referencia", "Menor_Precio_Agrupacion_Homogenea", "Agrupacion_Homogenea", "Diagnostico_Hospitalario", "Tratamiento_Larga_Duracion", "Control_Medico", "Huerfano", "Enfermedad")
