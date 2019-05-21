@@ -293,15 +293,14 @@ for(i in colnames(dataRegresion)){
   }
 }
 
-
 full.model <- lm(log_PVP ~ ., data = dataRegresion)
 step.model <- stepAIC(full.model, direction = "both", trace = FALSE)
 
 # =============================================================================================================
 # También realizamos el modelo a través de PLS (Regresión de mínimos cuadrados parciales)
 library(plspm)
-x <- BBDD_seleccion[, which(!colnames(BBDD_seleccion) %in% "PVP")]
-y <- BBDD_seleccion$PVP
+x <- dataRegresion[, which(!colnames(dataRegresion) %in% "PVP")]
+y <- dataRegresion$log_PVP
 modelo <- plspm::plsreg1(x, y, nc = 10, cv = TRUE)
 
 
@@ -314,6 +313,17 @@ modelo <- plspm::plsreg1(x, y, nc = 10, cv = TRUE)
 En este caso cambiamos nuestra variable respuesta y actualmente seria el nombre del producto como variable respuesta. 
 
 ```{r}
+# Nos quedamos con los datos necesarios
+dataTree <- BBDD_seleccion
+
+# Primero de todo transformamos los numericos en categoricos
+
+# Dividimos la muestra en train and test
+#Sample Indexes
+indexes = sample(1:nrow(data), size=0.2*nrow(data))
+
+
+
 
 ```
 
