@@ -237,7 +237,9 @@ par(mfrow= c (1,1))
 Como podemos comprobar tenemos Outliers. Deberemos de trabajar con ellos. 
 
 ```{r}
-
+boxplot.stats(datos$PVP)$out
+shapiro.test(datos$PVP)
+shapiro.test(log(datos[,'PVP']))
 ```
 
 
