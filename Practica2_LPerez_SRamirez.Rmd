@@ -7,22 +7,29 @@ output:
     df_print: paged
 ---
 
-```{r}
-# Instalar paquetes de R
+```{r, echo = FALSE}
+# Instalar paquetes de R que necesitaremos
 RequiredPackages <- c("Hmisc", "dplyr", 'VIM', 'FactoMineR', 'tidyr', 'dplyr', 'magrittr', 'plspm', 'amap')
 for (i in RequiredPackages) { #Installs packages if not yet installed
     if (!require(i)) install.packages(i)
 }
+
+# Insertamos las rutas para poder ejecutar el scripts 
+ruta <- 'C:/Users/sergir/Desktop/vademecum-consolidation-master/'
+archivo <- 'result.csv'
+path <- paste0(ruta, archivo)
 ```
 
 
 # 1. Descripción del dataset
 
+El dataset que a continuación se va a describir, se a obtenido mediante *web scrapping* en la práctica 1 de esta misma asignatura por lo tanto está práctica se tratará de realizar la limpieza del dataset que se consiguió desarrollar en etapas anteriores de esta asignatura. 
+
 El conjunto de datos obtenido recoge los medicamentos con más facturación en el mundo farmacéutico. A la vez también esta incorporado los medicamentos más consumidos en España. Este dataset es variable ya que se tendrán tantos medicamentos como el código demande. Esto es posible ya que el código esta preparado para hacer de buscador y extractor de aquellos medicamentos que se pasen por parámetros. Algunas variables de las que encontramos en el dataset sería el precio, nombre del medicamente, genérico o url del Vademecum.
 
 ```{r}
 # Leemos los datos para guardar
-datos <- read.csv2('result.csv', sep = ";", header = T, stringsAsFactors = T, dec = ".", encoding = 'latin1')
+datos <- read.csv2(path,  sep = ";", header = T, stringsAsFactors = T, dec = ".", encoding = 'latin1')
 
 # Cambiamos el nombre de las columnas para que puedan ser leibles
 cols <- c("Medicamento", "URL", "Presentacion", "Codigo_Nacional", "Tipo", "Generico", "Laboratorio", "Estado", "Fecha_Alta", "Fecha_Baja", "Aportacion_Beneficiario", "Principio_Activo", "PVP", "Precio_Referencia", "Menor_Precio_Agrupacion_Homogenea", "Agrupacion_Homogenea", "Diagnostico_Hospitalario", "Tratamiento_Larga_Duracion", "Control_Medico", "Huerfano", "Enfermedad")
@@ -44,6 +51,8 @@ var_numeric   <- unname(which(lista_clase %in% c('numeric', 'integer')))
 ```
 
 # 2. Integración y selección de datos
+
+En esta fase se tratará de 
 
 ## 2.1 Conversión de la tipologia de la variable
 
@@ -110,16 +119,6 @@ datos[, 'Codigo_Laboratorio'] <- data[, 'codigo']
 datos[, 'Baja'] <- ifelse(datos[, 'Fecha_Baja'] == "", "NO", "SI")
 ```
 
-A continuación hacemos que todos los códigos tengan el mismo número de dígitos. 
-```{r}
-table(nchar(datos[, 'Codigo_Nacional']))
-table(nchar(datos[, 'Codigo_Laboratorio']))
-datos[, 'Codigo_Laboratorio'] <- sprintf("%0.4d", as.numeric(datos[, 'Codigo_Laboratorio']))
-table(nchar(datos[, 'Codigo_Agrupacion']))
-datos[, 'Codigo_Agrupacion'] <- sprintf("%0.5d", as.numeric(datos[, 'Codigo_Agrupacion']))
-```
-
-
 ### Selección de los datos de interés
 
 ```{r}
@@ -138,6 +137,16 @@ Por lo tanto, nos replanteamos la idea de imputar las variables `Precio_Referenc
 ```{r}
 # Eliminamos la variable Generico de nuestro conjunto de datos
 datos[, 'Generico'] <- NULL
+```
+
+A continuación hacemos que todos los códigos tengan el mismo número de dígitos. 
+
+```{r}
+table(nchar(datos[, 'Codigo_Nacional']))
+table(nchar(datos[, 'Codigo_Laboratorio']))
+datos[, 'Codigo_Laboratorio'] <- sprintf("%0.4d", as.numeric(datos[, 'Codigo_Laboratorio']))
+table(nchar(datos[, 'Codigo_Agrupacion']))
+datos[, 'Codigo_Agrupacion'] <- sprintf("%0.5d", as.numeric(datos[, 'Codigo_Agrupacion']))
 ```
 
 Como tenemos en variables numéricas valores NA's deberemos de imputar estos registros para obtener los que realmente se consideren más cercanos. Para ello utilizaremos un método de imputación llamado *MICE*.
@@ -240,7 +249,29 @@ Como podemos comprobar tenemos Outliers. Deberemos de trabajar con ellos.
 boxplot.stats(datos$PVP)$out
 shapiro.test(datos$PVP)
 shapiro.test(log(datos[,'PVP']))
+shapiro.test(sqrt(datos[,'PVP']))
 ```
+
+Como vemos en nuestros contrastes, podemos decir que tanto los datos originales como los datos en formato de logaritmo tienen poca normalidad. Por ello lo que vamos hacer es sospechas de que existe 2 grupos diferenciados uno que serian aquellos medicamentos que tienen un coste muy elevado ya que són tratamientos específicos para enfermedades importantes y otro conjunto de datos que tienen un precio más asequible para la población. 
+
+Contrastemos esta idea que acabamos de plantear. 
+
+Para ello vamos a separar en dos conjuntos. El primer conjunto seran todos los valores que esten por debajo del tercer quartil y el segundo grupo aquellos conjuntos de datos que esten por encima de este valor. 
+
+```{r}
+valor_corte <- quantile(datos[, 'PVP'], 0.75)
+quienes <- which(datos[, 'PVP'] <= valor_corte)
+
+p10 <- ggplot(data = BBDD_seleccion[-quienes, ], aes(x = "", y = PVP))  + 
+       geom_boxplot (fill = fill , color = line) +
+        ggtitle ( "PVP" )
+p10
+# Comprovamos el test por grupos
+shapiro.test(datos[-quienes, 'PVP'])
+shapiro.test(log(datos[-quienes,'PVP']))
+shapiro.test(sqrt(datos[-quienes,'PVP']))
+```
+
 
 
 # 4. Análisis de los datos
@@ -277,7 +308,13 @@ fligner.test(PVP ~ Categoria_PVP, data = datos)
 
 ### 4.3.1. ¿Existen diferencias en el precio según el tipo de medicamento? 
 
+Para realizar este contraste, deberemos de realizar una ANOVA a partir de una función lineal.
+
 ```{r}
+variable.respuesta = 'PVP'
+variable.explicativa = 'Tipo'
+
+modelo <- lm(variable.respuesta ~  as.factor(variable.explicativa), data = datos)
 
 ```
 
@@ -339,18 +376,24 @@ dataTree <- BBDD_seleccion
 #Sample Indexes
 indexes = sample(1:nrow(data), size=0.2*nrow(data))
 
-
-
-
 ```
 
-
-### 4.3.5. Aplicación recomendador de medicamentos
 
 # 5. Representación de resultados
 
 # 6. Resolución del problema
 
-# 7. Código
+# 7. Futuras lineas de trabajo
+
+A continuación se detallarán futuras lineas de trabajo que se podrian realizar a partir de los datos que se han analizado. Decir que estas futuras lineas de trabajo se deberian de adecuar a las necesidades de cada usuario de los datos por lo tanto puede ser que para según quien use estos datos no le hagan falta algunas de las propuestas que se utilizarán a continuación:
+
+  - Generar, a partir del modelo predictivo del árbol de decisión, un app que le permita a cualquier usuario médico encontrar rápidamente el medicamento mas adecuado para cada paciente.
+  -
+  -
+  -
+  -
+
+# 8. Código
 
 El código del proyecto se encuentra en el repositorio libre de Github. [Enlace](https://github.com/lmgeraldino/vademecum-consolidation).
+
