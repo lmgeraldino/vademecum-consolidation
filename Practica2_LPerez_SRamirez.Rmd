@@ -14,10 +14,6 @@ for (i in RequiredPackages) { #Installs packages if not yet installed
     if (!require(i)) install.packages(i)
 }
 
-# Insertamos las rutas para poder ejecutar el scripts 
-ruta <- 'C:/Users/sergir/Desktop/vademecum-consolidation-master/'
-archivo <- 'result.csv'
-path <- paste0(ruta, archivo)
 ```
 
 
@@ -29,7 +25,7 @@ El conjunto de datos obtenido recoge los medicamentos con más facturación en e
 
 ```{r}
 # Leemos los datos para guardar
-datos <- read.csv2(path,  sep = ";", header = T, stringsAsFactors = T, dec = ".", encoding = 'latin1')
+datos <- read.csv2('result.csv',  sep = ";", header = T, stringsAsFactors = T, dec = ".", encoding = 'latin1')
 
 # Cambiamos el nombre de las columnas para que puedan ser leibles
 cols <- c("Medicamento", "URL", "Presentacion", "Codigo_Nacional", "Tipo", "Generico", "Laboratorio", "Estado", "Fecha_Alta", "Fecha_Baja", "Aportacion_Beneficiario", "Principio_Activo", "PVP", "Precio_Referencia", "Menor_Precio_Agrupacion_Homogenea", "Agrupacion_Homogenea", "Diagnostico_Hospitalario", "Tratamiento_Larga_Duracion", "Control_Medico", "Huerfano", "Enfermedad")
