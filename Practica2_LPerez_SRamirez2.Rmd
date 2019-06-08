@@ -1,0 +1,255 @@
+---
+title: 'Práctica 2: Limpieza y validación de los datos'
+author: "Luis Manuel Pérez Geraldino y Sergi Ramirez Mitjans"
+date: "16/5/2019"
+output:
+  pdf_document:
+    df_print: paged
+---
+
+```{r, eval = FALSE, echo = FALSE}
+# Instalar paquetes de R que necesitaremos
+RequiredPackages <- c("Hmisc", "dplyr", 'VIM', 'FactoMineR', 'tidyr', 'dplyr', 'magrittr', 'plspm', 'amap')
+for (i in RequiredPackages) { #Installs packages if not yet installed
+    if (!require(i)) install.packages(i)
+}
+
+```
+
+
+# 1. Descripción del dataset
+
+El dataset que a continuación se va a describir, se a obtenido mediante *web scrapping* en la práctica 1 de esta misma asignatura por lo tanto está práctica se tratará de realizar la limpieza del dataset que se consiguió desarrollar en etapas anteriores de esta asignatura. 
+
+El conjunto de datos obtenido recoge los medicamentos con más facturación en el mundo farmacéutico. A la vez también esta incorporado los medicamentos más consumidos en España. Este dataset es variable ya que se tendrán tantos medicamentos como el código demande. Esto es posible ya que el código esta preparado para hacer de buscador y extractor de aquellos medicamentos que se pasen por parámetros. Algunas variables de las que encontramos en el dataset sería el precio, nombre del medicamente, genérico o url del Vademecum.
+
+```{r}
+# Leemos los datos para guardar
+datos <- read.csv2('result.csv',  sep = ";", header = T, stringsAsFactors = T, dec = ".", encoding = 'latin1')
+
+# Cambiamos el nombre de las columnas para que puedan ser leibles
+cols <- c("Medicamento", "URL", "Presentacion", "Codigo_Nacional", "Tipo", "Generico", "Laboratorio", "Estado", "Fecha_Alta", "Fecha_Baja", "Aportacion_Beneficiario", "Principio_Activo", "PVP", "Precio_Referencia", "Menor_Precio_Agrupacion_Homogenea", "Agrupacion_Homogenea", "Diagnostico_Hospitalario", "Tratamiento_Larga_Duracion", "Control_Medico", "Huerfano", "Enfermedad")
+colnames(datos) <- cols
+
+# Generamos el archivo metadata
+library(Hmisc)
+metadata <- contents(datos)
+print(metadata)
+```
+
+
+## 2. Objetivos
+La creación del estudio de nuestra base de datos contiene diferentes objetivos. A continuación vamos a explicar cada uno de ellos para que tenga sentido el echo de realizar según que prueba estadística o modelo de predicción. Los objetivos son los siguientes:
+  
+  - Para empezar queremos realizar un estudio para saber si existe o no existe diferencia entre el precio y los grupos tipo de medicamento.
+  
+  - También queremos hacer un estudio para encontrar existencia diferencias en el precio según el laboratorio que realiza el medicamento. 
+  
+  - Mirar si existe diferencias de precio según la enfermedad que se quiera tratar. 
+  
+  - Agrupar conjunto de medicamentos para detectar patrones subjacentes detrás de ello. 
+  
+  - Intentar hacer una predicción del precio. Este apartado consistirá en realizar un modelo de predicción de precio. Nos servirá a las farmacéuticas para facilitarles el precio que se le debe de asignar a un enfermo según variables del medicamento que va a utilizar. 
+  
+  - Realizar una clasificación de la enfermedad según variables económica y del laboratorio que lo fabrica. Al final queremos hacer este estudio para poder ayudar a las empresas aseguradoras para renovar o no un seguro de salud sabiendo el gasto en medicamentos que realiza el cliente saber que enfermedad tiene. 
+  
+# 3. Análisis Descriptivo
+
+A continuación vamos a hacer un descriptivo numérico de como son nuestras variables. 
+
+```{r}
+# Transformamos las variables factores a characters
+# cols <- c("Medicamento", "URL", "Presentacion", "Codigo_Nacional", "Tipo", "Generico", # #"Laboratorio", "Estado", "Aportacion_Beneficiario", "Principio_Activo","Agrupacion_Homogenea", #"Fecha_Alta", "Fecha_Baja", "Diagnostico_Hospitalario", "Tratamiento_Larga_Duracion", #"Control_Medico", "Huerfano", "Enfermedad")
+
+#for(i in cols){
+#  cat("Transformando variable", i, "...")
+#  datos[, i] <- as.character(datos[, i])
+#  cat(" OK\n")
+#}
+
+# Generamos 3 vectores con la posicion de las columnas según la tipologia de ellas
+lista_clase <- sapply(datos, class)
+table(lista_clase)
+
+# Generamos diferentes variables
+var_factor    <- unname(which(lista_clase  %in% c('factor', 'character')))
+var_numeric   <- unname(which(lista_clase %in% c('numeric', 'integer')))
+ 
+# Creamos una función para que nos generen los gráficos y descriptivos univariante de los datos.
+descriptivoUnivariante <- function(variables, dataframe){
+  # Nos quedamos con el nombre de todas las variables
+	## Hacemos un bucle para cada una de ellas
+	for (variable in variables) {
+		valores <- dataframe[, variable]
+		if (class(valores) %in% c('numeric', 'integer')) {
+		
+			# Generamos un boxplot de distribución de los datos
+			grafico <- boxplot(valores, col = "steelblue2", main = paste0("Boxplot de la variable ", variable))
+			texto <- c(paste('Min: ', round(min(valores, na.rm = TRUE), 2)),
+			paste('Median: ', round(median(valores, na.rm=TRUE), 2)),
+			paste('Mean: ', round(mean(valores, na.rm=T), 2)),
+			paste('SD: ', round(sd(valores,na.rm=T), 2)),
+			paste('Max: ', round(max(valores, na.rm=TRUE), 2)),
+			paste('NAs: ', sum(is.na(valores))))
+			legend('topleft', 9, texto, inset=0.05)
+			
+		}
+		if (class(valores) %in% c('factor', 'character')){
+			# Generamos la tabla para las variables categoricas
+			frecs <- round(table(valores)/sum(table(valores)), 2)
+			counts <- data.frame(table(valores))
+			grafico <- barplot(frecs, main = paste0("Barplot de la variable ", variable), xlab = "",     col = "darkblue", ylim = c(0, 1))
+			text(x = grafico, y = frecs, label = counts$Freq, pos = 3, cex = 1)
+		}
+	}
+}
+
+```
+
+## 3.1 Variables numéricas
+
+```{r}
+cols <- colnames(datos)[var_numeric]
+descriptivoUnivariante(cols, datos)
+```
+
+## 3.2 Varibles categóricas
+```{r}
+cols <- colnames(datos)[var_factor]
+descriptivoUnivariante(cols, datos)
+```
+
+
+# 4. Análisis Descriptivo Bivariante
+
+## 4.1 Con la variable respuesta precio
+### 4.1.1 Variables numéricas
+
+```{r}
+cols <- c("PVP", "Precio_Referencia", "Menor_Precio_Agrupacion_Homogenea")
+correlaciones <- cor(datos[, colnames(datos)[var_numeric]], use = "complete.obs")
+correlaciones
+```
+
+Por lo tanto del output podemos extraer la información de que las tres variables numéricas tienen una correlación perfecta (1) y por lo tanto podemos eliminar de nuestros datos 2 de ellas. 
+
+Eliminaremos las variables `Precio_Referencia` y `Menor_Precio_Agrupacion_Homogenea` ya que no tiene sentido que posteriormente se haya de imputar estos valores para que nos quede igual que la variable `PVP`. Por lo tanto no hará tampoco falta imputación de datos faltantes en las variables numéricas. 
+
+
+### 4.1.2 Variables categóricas
+
+Para realizar dichas pruebas, haremos el contraste de Kruskal-Wallis para detectar independencia entre grupos y las graficaremos con boxplots múltiples.
+
+```{r}
+kruskal.test(PVP ~ Enfermedad , data = datos)
+```
+
+
+## 4.2 Con la variable respuesta enfermedad
+### 4.2.1 Variables numéricas
+
+### 4.2.2 Variables categóricas
+
+
+# 5. Limpieza de los datos
+## 5.1 Seleccion de las variables
+
+Descartaremos las variables `Medicamento`, `URL`, `Precio_Referencia` y `Menor_Precio_Agrupacion_Homogenea`. También eliminamos la variable `Generico` ya que es una variable que es integra sin datos y por lo tanto no nos proporcionara nada a nuestro análisis.
+
+```{r}
+cols <- c("Presentacion", "Codigo_Nacional", "Tipo", "Laboratorio", "Estado", "Fecha_Alta", "Fecha_Baja", "Aportacion_Beneficiario", "Principio_Activo", "PVP", "Agrupacion_Homogenea", "Diagnostico_Hospitalario", "Tratamiento_Larga_Duracion", "Control_Medico", "Huerfano", "Enfermedad")
+
+datos_sel <- datos[, cols]
+```
+
+## 5.2 Imputación de variables
+
+En este apartado no deberemos imputar nada debido a que las variables seleccionadas a imputar numéricas han sido descartadas para los posteriores análisis ya que cogemos la variable informada PVP. Por lo que hace a las variables categóricas se le asigna los siguientes valores: 
+
+```{r}
+
+```
+
+## 5.3 Creación de nuevas variables
+
+## 5.4 Detección de outliers
+
+# 6. Contrastes
+## 6.1 Precio vs. Tipo de Medicamento
+## 6.2 Precio vs. Laboratorio
+## 6.3 Precio vs. Enfermedad
+
+
+# 7. Predicciones
+## 7.1 Regressión lineal
+```{r}
+BBDD_seleccion[, 'log_PVP'] <- log(BBDD_seleccion[, 'PVP'])
+
+# A continuación generamos nuestro modelo lineal. Para ello primero de todo vamos a hacer los pasos de stepwise para que se escojan automaticamente aquellas variables que sean importantes para el modelo. 
+
+library(MASS)
+
+cols <- c("log_PVP", 'Presentacion', 'Tipo', 'Estado', 'Aportacion_Beneficiario', 'Tratamiento_Larga_Duracion', 'Enfermedad', 'Codigo_Laboratorio', 'Baja')
+
+dataRegresion <- BBDD_seleccion[, cols]
+
+for(i in colnames(dataRegresion)){
+  if(i != 'log_PVP'){
+    dataRegresion[, i] <- as.factor(dataRegresion[, i])
+  }
+}
+
+full.model <- lm(log_PVP ~ ., data = dataRegresion)
+step.model <- stepAIC(full.model, direction = "both", trace = FALSE)
+```
+
+## 7.2 Agrupación de medicamentos (clúster)
+métodos jerárquicos
+
+```{r}
+##########################################################################
+####             CLASIFICACIÓN: CLUSTERING JERÁRQUICO                 ####
+##########################################################################
+
+# install.packages("magrittr")
+# install.packages("dendextend")
+# install.packages("dendextendRcpp")
+
+library(dendextend)
+library(dendextendRcpp)
+library(magrittr)
+
+library(cluster)
+
+dend <- datos_sel %>% daisy(metric = "gower", stand=TRUE) %>% hclust(method = "ward.D") %>% as.dendrogram
+
+labels(dend) <- rep(NA,nrow(datos_sel))
+dend %>% color_branches(k=3,col=2:4) %>% plot(horiz=FALSE, main = "Método de Ward: 3 clusters",
+                                              xlab='Participantes',ylab='Distancias') 
+legend('topright',legend=c('Cluster 1','Cluster 2','Cluster 3'), lty=rep(1,3), col=c(2,3,4),cex=0.7)
+
+abline(h = 30, lwd = 2, lty = 2, col = "blue")
+
+c1 <- cutree(dend, 3)
+datos_sel$CLUST3 <- as.factor(c1)
+```
+
+
+## 7.3 Detección de patrones en las características (ACM)
+
+
+# 8. Futuras lineas de trabajo
+
+A continuación se detallarán futuras lineas de trabajo que se podrian realizar a partir de los datos que se han analizado. Decir que estas futuras lineas de trabajo se deberian de adecuar a las necesidades de cada usuario de los datos por lo tanto puede ser que para según quien use estos datos no le hagan falta algunas de las propuestas que se utilizarán a continuación:
+
+  - Generar, a partir del modelo predictivo del árbol de decisión, un app que le permita a cualquier usuario médico encontrar rápidamente el medicamento mas adecuado para cada paciente.
+  -
+  -
+  -
+  -
+
+# 9. Código
+
+El código del proyecto se encuentra en el repositorio libre de Github. [Enlace](https://github.com/lmgeraldino/vademecum-consolidation).
+
+  
