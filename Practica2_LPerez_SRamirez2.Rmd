@@ -391,10 +391,64 @@ En este apartado no deberemos imputar nada debido a que las variables selecciona
 ## 5.6 Detección de outliers
 
 # 6. Contrastes
+
 ## 6.1 Precio vs. Tipo de Medicamento
+
+#### Hipótesis nula y alternativa
+
+- H0: μ1 = μ2 = μ3
+- H1: Las medias poblacionales de las muestras no son iguales
+
+donde μ1 es el precio de medicamentos de tipo 'Medicamento Etica', μ2 el precio de medicamentos de tipo 'Medicamento Generico' y μ3 el precio de medicamentos de tipo 'Medicamento con Denominacion Generica'.
+
+#### Resolución
+
+Para realizar este contraste, se calculará el análisis de la varianza mediante ANOVA.
+
+```{r}
+
+anova <- aov(PVP ~ as.factor(Tipo), data = datos)
+summary(anova)
+```
+
+Como observamos, la variable tipo es relevante a la hora de definir el precio del medicamento, por lo que rechazamos la hipótesis nula. Por lo tanto, podemos confirmar que existen diferencias en el precio según el tipo de medicamento.
+
 ## 6.2 Precio vs. Laboratorio
+
+#### Hipótesis nula y alternativa
+
+- H0: μ1 = μ2 = ... = μn
+- H1: Las medias poblacionales de las muestras no son iguales
+
+donde μ representa los precios de los distintos laboratorios.
+
+#### Resolución
+
+Aplicaremos un test no paramétrico, el test Kruskal-Wallis, equivalente a ANOVA.
+
+```{r}
+kruskal.test(PVP ~ as.factor(Laboratorio), data = datos)
+```
+
+Como el p-value obtenido es menos de 0.001, sabemos que las modificaciones que la variable Laboratorio obtiene son relevantes en cuanto al PVP. Por lo tanto, tal y como en el ejercicio anterior, rechazamos la hipótesis nula. Esto quiere decir que el precio del medicamento es influido por el laboratorio que lo genera.
+
 ## 6.3 Precio vs. Enfermedad
 
+#### Hipótesis nula y alternativa
+- H0: μ1 = μ2 = ... = μn
+- H1: Las medias poblacionales de las muestras no son iguales
+
+donde μ representa los precios de las distintas enfermedades relacionadas.
+
+#### Resolución
+
+Aplicamos de nuevo el test Kruskal-Wallis:
+
+```{r}
+kruskal.test(PVP ~ as.factor(Enfermedad), data = datos)
+```
+
+Como en el caso anterior, al obtener un p-value menor que 0.001, sabemos que las modificaciones que la variable Enfermedad obtiene son relevantes en cuanto al PVP. Rechazamos la hipótesis nula, esto quiere decir que la enfermedad es influyente respecto al precio.
 
 # 7. Predicciones
 ## 7.1 Regressión lineal
