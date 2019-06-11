@@ -577,7 +577,7 @@ donde $\mu_{1}$ es el precio de medicamentos de tipo 'Medicamento Etica', $\mu{2
 
 #### Resolución
 
-Para realizar este contraste, se calculará el análisis de la varianza mediante ANOVA.
+Aplicaremos un test no paramétrico, el test Kruskal-Wallis, equivalente a ANOVA.
 
 ```{r}
 kruskal.test(PVP ~ as.factor(Tipo), data = datos)
@@ -598,7 +598,7 @@ donde μ representa los precios de los distintos laboratorios.
 
 #### Resolución
 
-Aplicaremos un test no paramétrico, el test Kruskal-Wallis, equivalente a ANOVA.
+Aplicaremos el test Kruskal-Wallis:
 
 ```{r}
 kruskal.test(PVP ~ as.factor(Laboratorio), data = datos)
