@@ -481,8 +481,8 @@ Vemos como realmente nos está hablando de que nuestros datos no son normales ya
 Vamos a comprobar lo que nos dice los gráficos mediante dos contrastes estadísticos: 
 
 ```{r}
-shapiro.test(x = datos_sel$PVP)
-ks.test(x = datos_sel$PVP, "pnorm", mean(datos_sel$PVP), sd(datos_sel$PVP))
+print(shapiro.test(x = datos_sel$PVP))
+print(ks.test(x = datos_sel$PVP, "pnorm", mean(datos_sel$PVP), sd(datos_sel$PVP)))
 library("nortest")
 lillie.test(x = datos_sel$PVP)
 library("tseries")
@@ -809,20 +809,23 @@ Si aumentaramos la zona central podriamos llegar a encontrar mas relaciones entr
 
 Mediante el paquete `explor` de R permite a través de un shiny realizar el estudio ACM al completo. 
 
-# 8. Conclusiones
+# 8. Conclusiones y futuras lineas de trabajo
 
+Como conclusiones del trabajo podemos decir que nos hemos dado cuenta de la importáncia del pre-processing de los datos ya que mucha de la información no se encuentra de forma tabular sinó que se han de seguir trabajando para obtenerlas tal y como las necesitamos. 
 
-# 9. Futuras lineas de trabajo
+También nos hemos dado cuenta de la importáncia de la transformación de los datos para obtener conclusiones a partir de los modelos. 
+
+También decir que hemos ido concluyendo cada apartado según ivamos resolviendo los problemas y por lo tanto se ha ido concluyendo cada apartado en el mismo. 
 
 A continuación se detallarán futuras lineas de trabajo que se podrian realizar a partir de los datos que se han analizado. Decir que estas futuras lineas de trabajo se deberian de adecuar a las necesidades de cada usuario de los datos por lo tanto puede ser que para según quien use estos datos no le hagan falta algunas de las propuestas que se utilizarán a continuación:
 
   - Generar, a partir del modelo predictivo del árbol de decisión, un app que le permita a cualquier usuario médico encontrar rápidamente el medicamento mas adecuado para cada paciente.
   - Realizaría más text mining a la variable Medicamento e Presentación para extraer más características de los productos que no se han extraido ni se han podido extraer.
-  -
-  -
-  - 
+  - Dedicarle más tiempo al tratamiento de variables de texto y hacer agrupaciones de categorias de variables.
+  - Descargar información más completa de medicamentos (que sean aleatoria para generar supuestos)
+  - Para acabar decir que se podria desarrollar mejor el apartado de ACM en el cuál podriamos detectar muchos mas patrones de los datos por tal de obtener conclusiones más acertadas. 
 
-# 10. Código
+# 9. Código
 
 El código del proyecto se encuentra en el repositorio libre de Github. [Enlace](https://github.com/lmgeraldino/vademecum-consolidation).
 
