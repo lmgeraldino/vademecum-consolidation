@@ -1,11 +1,11 @@
 ---
-title: 'Práctica 2: Limpieza y validación de los datos'
-author: "Luis Manuel Pérez Geraldino y Sergi Ramirez Mitjans"
+title: 'PrÃ¡ctica 2: Limpieza y validaciÃ³n de los datos'
+author: "Luis Manuel PÃ©rez Geraldino y Sergi Ramirez Mitjans"
 date: "16 de Mayo de 2019"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
-  pdf_document: default
 header-includes:
 - \usepackage[spanish]{babel}
 - \usepackage{longtable}
@@ -118,7 +118,6 @@ print(tabla, tabular.environment="longtable", comment = FALSE)
 
 par(mfrow = c(1, 3))
 for(col in cols){
-    cat("Descriptivo univariante para la variable ", col)
   	grafico <- boxplot(datos[, col], col = "steelblue2", main = col)
 }
 par(mfrow = c(1, 1))
@@ -160,7 +159,6 @@ datos[, 'Enfermedad'] <- revalue(datos[, 'Enfermedad'],
 cols <- colnames(datos)[var_factor]
 
 for(col in cols) {
-  cat("Descriptivo univariante para la variable", col, "\n")
   tabla_frec <- table(datos[, col], useNA = "ifany")
   longitud <- length(tabla_frec)
   if (longitud <= 16) {
@@ -173,7 +171,6 @@ for(col in cols) {
     text(x = (counts$Porcentaje/100), col = "red", y = grafico, label = labels, pos = 4, cex = 0.65)
   } else {
     cat("El número de categorias de la variable ", col, "es muy grande(", longitud, "). Pasamos a la siguiente variable.\n")
-		cat("\n ===============================\n")
   }
 }
 ```
@@ -209,7 +206,7 @@ Por lo tanto del output podemos extraer la información de que las tres variable
 Eliminaremos las variables `Precio_Referencia` y `Menor_Precio_Agrupacion_Homogenea` ya que no tiene sentido que posteriormente se haya de imputar estos valores para que nos quede igual que la variable `PVP`. Por lo tanto no hará tampoco falta imputación de datos faltantes en las variables numéricas. 
 
 
-### 4.1 Variables categóricas
+### 4.2 Variables categóricas
 
 Para realizar dichas pruebas, haremos el contraste de Kruskal-Wallis para detectar independencia entre grupos y las graficaremos con boxplots múltiples. Para ello cogeremos las mismas variables que habiamos cogido anteriormente para realizar los gráficos univariantes. 
 
@@ -380,15 +377,12 @@ for(col in cols) {
 		counts <- data.frame(tabla_frec)
 		colnames(counts) <- c('Variables', 'Conteo')
 		counts[, 'Porcentaje'] <- round((counts$Conteo/sum(counts$Conteo))*100, 2)
-		print(counts)
-    cat("\n ===============================\n")
     par(mai=c(1,2,2,2))
     grafico <- barplot((counts$Porcentaje/100) , main = paste0("Barplot de la variable ", col), horiz = TRUE, names.arg = counts$Variables,las = 1, col = "darkblue", xlim = c(0, 1), cex.names = 0.6)
     labels = paste0(counts$Conteo, " (", counts$Porcentaje,"%)")
     text(x = (counts$Porcentaje/100), col = "red", y = grafico, label = labels, pos = 4, cex = 0.65)
   } else {
     cat("El número de categorias de la variable ", col, "es muy grande(", longitud, "). Pasamos a la siguiente variable.\n")
-		cat("\n ===============================\n")
   }
 }
 
@@ -525,6 +519,9 @@ library("nortest")
 lillie.test(x = datos_sel$log_PVP)
 library("tseries")
 jarque.bera.test(x = datos_sel$log_PVP)
+
+# Eliminamos los valores que no queremos
+datos_sel$log_PVP <- NULL
 ```
 
 Aunque visualmente veíamos una corrección en los datos a normales, hemos podido comprobar que tampoco conseguimos que sea normal. Nos replanteamos la idea de hacer la misma prueba para la raíz cuadrada y seguiamos considerando NO normalidad de los datos. Para acabar el proceso intentamos realizar los mismos pasos pero agrupando en baratos y caros y nos continuaba saliendo que no exisita normalidad en nuestros datos.
@@ -676,16 +673,12 @@ También vemos que nuestro modelo no tiene constante y por lo tanto será direct
 
 A continuación vamos a clasificar nuestros datos a través de un modelo de agrupación jerárquico como són los clústers. Los métodos jerárquicos aplican una descomposición jerárquica del conjunto de datos origen. A partir del conjunto de datos por separado, va agrupando los grupos similares hasta formar un único grupo. Lo bueno de este tipo de modelos es que se puede visualizar el árbol que se genera al formar los grupos y decidir el número de clases en las que se quiere partir los datos.
 
-```{r, eval = FALSE}
-# install.packages("magrittr")
-# install.packages("dendextend")
-# install.packages("dendextendRcpp")
-
+```{r}
 library(dendextend)
 library(magrittr)
 library(cluster)
 
-datos_cluster <- datos_sel[, which(!colnames(datos_sel) %in% c('PVP', 'Codigo_Agrupacion', 'Codigo_Laboratorio', 'Principio_Activo'))]
+datos_cluster <- datos_sel[, which(!colnames(datos_sel) %in% c('log_PVP', 'PVP', 'Codigo_Agrupacion', 'Codigo_Laboratorio', 'Principio_Activo'))]
 
 for(i in colnames(datos_cluster)){
   datos_cluster[, i] <- as.factor(datos_cluster[, i])
@@ -697,8 +690,7 @@ dend <- datos_cluster %>% daisy(metric = "gower", stand=TRUE) %>% hclust(method=
 
 labels(dend) <- rep(NA,nrow(datos_cluster))
 
-dend %>% color_branches(k=k ,col = rainbow(k)) %>% plot(horiz=FALSE, main = "Método de Ward: 3 clusters",
-                                              xlab='Participantes',ylab='Distancias') 
+dend %>% color_branches(k=k ,col = rainbow(k)) %>% plot(horiz=FALSE, main = "Método de Ward: 3 clusters",xlab='Participantes',ylab='Distancias') 
 
 legend('topright',legend=c('Cluster 1','Cluster 2','Cluster 3', 'Cluster 4'), lty=rep(1,3), col=rainbow(k),cex=0.7)
 abline(h = 33, lwd = 2, lty = 2, col = "blue")
@@ -719,7 +711,7 @@ A continuación se muestra una descriptiva de las clases para las variables que 
 Así utilizando este procedimiento podemos ver de que variables definen nuestros grupos realizados por el clúster. 
 
 ```{r}
-cols <- colnames(datos_cluster)
+cols <- colnames(datos_cluster)[-10]
 
 for (col in cols){
   tabla <- prop.table(ftable(formula(paste0("CLUST4 ~ ", col)), datos_cluster), 2)
